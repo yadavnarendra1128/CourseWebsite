@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-const { User, Purchase } = require("../db");
+const { User, Purchase, Course } = require("../db");
 const { signupSchema, loginSchema } = require("../types");
 const { JWT_USER_PASSWORD } = require("../config");
 const userMiddleware = require("../middleware/user");
@@ -94,9 +94,19 @@ router.post("/login", async (req, res) => {
 
 router.get("/purchases", userMiddleware, async (req, res) => {
   try {
-    const courses = await Purchase.find({
+    const purchases = await Purchase.find({
       userId: req.id,
     });
+    if (purchases.length==0) {
+      return res.status(404).json({ msg: "No purchased courses found." });
+    }
+
+    const courses = await Course.find({
+        _id: {
+          $in: purchases.map(x=>x.courseId),
+        }},
+    )
+
     return res.status(200).json({
       msg: "Purchase courses loaded",
       courses,
